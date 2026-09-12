@@ -8,9 +8,13 @@ export function encodeEvent(event: CalendarEvent) {
     throw new Error('Choose a valid end time at or after the start.');
   }
   if (event.allDay) throw new Error('All-day events need a date-only model and are not supported yet.');
-  const title = event.title.trim();
+  const title = typeof event.title === 'string' ? event.title.trim() : '';
   if (!title || title.length > 200) throw new Error('Use a title between 1 and 200 characters.');
-  return { title, start, end };
+  const color = event.color;
+  if (color && [color.primary, color.secondary].some(value => typeof value !== 'string' || !value.length || value.length > 64)) {
+    throw new Error('The event has an invalid color.');
+  }
+  return { title, start, end, ...(color ? { color: { primary: color.primary, secondary: color.secondary } } : {}) };
 }
 
 export function decodeEvent(id: string, value: any): CalendarEvent {
@@ -21,7 +25,7 @@ export function decodeEvent(id: string, value: any): CalendarEvent {
     return new Date(raw);
   };
   const event: CalendarEvent = { id, title: value.title, start: instant(value.start),
-    end: instant(value.end ?? value.start), allDay: value.allDay,
+    end: instant(value.end ?? value.start), allDay: value.allDay, color: value.color,
     meta: { version: value.version ?? 0 }, draggable: true,
     resizable: { beforeStart: true, afterEnd: true } };
   encodeEvent(event);

@@ -13,6 +13,12 @@
           "end": { ".validate": "newData.isNumber() && newData.val() >= newData.parent().child('start').val()" },
           "version": { ".validate": "newData.isNumber() && ((!data.exists() && newData.val() == 1) || (data.exists() && newData.val() == data.val() + 1))" },
           "deleted": { ".validate": "newData.isBoolean()" },
+          "color": {
+            ".validate": "newData.hasChildren(['primary', 'secondary'])",
+            "primary": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 64" },
+            "secondary": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 64" },
+            "$other": { ".validate": false }
+          },
           "$other": { ".validate": false }
         }
       }
