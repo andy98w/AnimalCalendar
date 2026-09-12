@@ -4,6 +4,7 @@ import {
   ViewChild,
   TemplateRef,
   OnInit,
+  ChangeDetectorRef,
 } from '@angular/core';
 import {
   startOfDay,
@@ -45,12 +46,15 @@ export class CalendarComponent implements OnInit {
   CalendarView = CalendarView;
   viewDate: Date = new Date();
   events: CalendarEvent[] = []; 
-  constructor(private modal: NgbModal, private crudService: CrudService) {}
+  error = '';
+  constructor(private modal: NgbModal, private crudService: CrudService, private detector: ChangeDetectorRef) {}
   ngOnInit(): void {
-    this.crudService.GetEventsList().subscribe(data => {
+    this.crudService.GetEventsList().subscribe({ next: data => {
       this.events = data;
-      console.log(data)
-    });
+      this.error = '';
+      this.detector.markForCheck();
+      this.refresh.next();
+    }, error: error => { this.error = error.message; this.detector.markForCheck(); this.refresh.next(); } });
   }
   modalData: {
     action: string;
@@ -79,17 +83,7 @@ export class CalendarComponent implements OnInit {
     newStart,
     newEnd,
   }: CalendarEventTimesChangedEvent): void {
-    this.events = this.events.map((iEvent) => {
-      if (iEvent === event) {
-        return {
-          ...event,
-          start: newStart,
-          end: newEnd,
-        };
-      }
-      return iEvent;
-    });
-    this.handleEvent('Dropped or resized', event);
+    this.persist({ ...event, start: newStart, end: newEnd });
   }
 
   handleEvent(action: string, event: CalendarEvent): void {
@@ -98,7 +92,18 @@ export class CalendarComponent implements OnInit {
   }
 
   deleteEvent(eventToDelete: CalendarEvent) {
-    this.events = this.events.filter((event) => event !== eventToDelete);
+    this.persist(eventToDelete, true);
+  }
+
+  private async persist(event: CalendarEvent, deleted = false) {
+    try {
+      const saved = await this.crudService.saveEvent(event, deleted);
+      this.events = deleted ? this.events.filter(item => item.id !== event.id)
+        : this.events.map(item => item.id === event.id ? saved : item);
+      this.error = '';
+    } catch (error: any) { this.error = error.message; }
+    this.detector.markForCheck();
+    this.refresh.next();
   }
 
   setView(view: CalendarView) {
@@ -110,4 +115,3 @@ export class CalendarComponent implements OnInit {
   }
   
 }
-
