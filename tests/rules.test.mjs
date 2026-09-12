@@ -22,8 +22,9 @@ test('owner-only calendar access, including anonymous and cross-user denials', a
   await assertSucceeds(set(ref(alice, 'alice/events/access'), record));
   await assertSucceeds(get(ref(alice, 'alice/events')));
   for (const context of [env.authenticatedContext('bob'), env.unauthenticatedContext()]) {
-    await assertFails(get(ref(context.database(), 'alice/events')));
-    await assertFails(set(ref(context.database(), 'alice/events/access'), { ...record, version: 2 }));
+    const database = context.database();
+    await assertFails(get(ref(database, 'alice/events')));
+    await assertFails(set(ref(database, 'alice/events/access'), { ...record, version: 2 }));
   }
 });
 
