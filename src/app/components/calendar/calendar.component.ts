@@ -4,6 +4,7 @@ import {
   ViewChild,
   TemplateRef,
   OnInit,
+  OnDestroy,
   ChangeDetectorRef,
 } from '@angular/core';
 import {
@@ -16,7 +17,7 @@ import {
   isSameMonth,
   addHours,
 } from 'date-fns';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import {
   CalendarEvent,
@@ -40,16 +41,19 @@ import { CommonModule } from '@angular/common';
   ],
   templateUrl: './calendar.component.html',
   })
-export class CalendarComponent implements OnInit {
+export class CalendarComponent implements OnInit, OnDestroy {
   @ViewChild('modalContent', { static: true }) modalContent: TemplateRef<any>;
   view: CalendarView = CalendarView.Month;
   CalendarView = CalendarView;
   viewDate: Date = new Date();
   events: CalendarEvent[] = []; 
   error = '';
-  constructor(private modal: NgbModal, private crudService: CrudService, private detector: ChangeDetectorRef) {}
+  constructor(private modal: NgbModal, public crudService: CrudService, private detector: ChangeDetectorRef) {}
+  private subscription?: Subscription;
+  ngOnDestroy() { this.subscription?.unsubscribe(); }
   ngOnInit(): void {
-    this.crudService.GetEventsList().subscribe({ next: data => {
+    this.subscription?.unsubscribe();
+    this.subscription = this.crudService.GetEventsList().subscribe({ next: data => {
       this.events = data;
       this.error = '';
       this.detector.markForCheck();
@@ -97,9 +101,7 @@ export class CalendarComponent implements OnInit {
 
   private async persist(event: CalendarEvent, deleted = false) {
     try {
-      const saved = await this.crudService.saveEvent(event, deleted);
-      this.events = deleted ? this.events.filter(item => item.id !== event.id)
-        : this.events.map(item => item.id === event.id ? saved : item);
+      await this.crudService.saveEvent(event, deleted);
       this.error = '';
     } catch (error: any) { this.error = error.message; }
     this.detector.markForCheck();

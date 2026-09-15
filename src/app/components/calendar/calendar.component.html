@@ -1,3 +1,16 @@
+<section *ngIf="crudService.sync | async as sync" aria-label="Calendar sync" class="p-3">
+  <p role="status">{{ sync.online ? 'Connected' : 'Offline — edits stay on this device until you reconnect.' }} · {{ sync.edits.length }} unsynced draft(s)</p>
+  <p *ngIf="sync.error" role="alert">{{ sync.error }}</p>
+  <button type="button" class="btn btn-outline-primary" [disabled]="!sync.online" (click)="crudService.flush()">Retry sync</button>
+  <div *ngFor="let edit of sync.edits">
+    <div *ngIf="edit.status === 'conflict'" class="alert alert-warning" role="alert">
+      “{{ edit.record.title }}” changed or was deleted on another device. Your {{ edit.record.deleted ? 'deletion' : 'edit' }} was not applied.
+      <p>Your draft: {{ edit.record.start | date:'medium' }} – {{ edit.record.end | date:'medium' }}.</p>
+      <p>The calendar shows the server version. Keep it below, then edit it again if needed. Deleted events cannot be restored by this draft.</p>
+      <button type="button" class="btn btn-outline-dark" (click)="crudService.discard(edit)">Keep server version and discard my draft</button>
+    </div>
+  </div>
+</section>
 
 <p *ngIf="error" role="alert">{{ error }} <button type="button" (click)="ngOnInit()">Reload calendar</button></p>
 <div class="row text-center">
